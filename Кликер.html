@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport">
+    <link rel="stylesheet" href="style.css">
+    <title>Кликер</title>
+</head>
+<body>
+    <div id="preloader">
+        <img id="preloader-img" src="img/loading.gif" alt="Загрузка">
+    </div>
+
+    <div id="game-container">
+        <div id="top-bar"></div>
+        <h1>Кликер</h1>
+        <div id="score">Счет: <span id="score-value">0</span></div>
+        <div id="click-area">Кликай!</div>
+        <div>
+            <button class="upgrade-button" id="upgrade1" data-upgrade="1" data-cost="20">Улучшение 1 (<span id="upgrade1-cost">20</span>)</button>
+            <button class="upgrade-button" id="upgrade2" data-upgrade="5" data-cost="100">Улучшение 2 (<span id="upgrade2-cost">100</span>)</button>
+            <button class="upgrade-button" id="upgrade3" data-upgrade="10" data-cost="150">Улучшение 3 (<span id="upgrade3-cost">150</span>)</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let clickValue = 1;
+        let upgradeCosts = {
+            upgrade1: 20,
+            upgrade2: 100,
+            upgrade3: 150
+        };
+
+        const scoreValueElement = document.getElementById("score-value");
+        const clickAreaElement = document.getElementById("click-area");
+        const upgradeButtons = document.querySelectorAll(".upgrade-button");
+        const gameContainer = document.getElementById("game-container");
+        const preloader = document.getElementById("preloader");
+        const upgrade1CostElement = document.getElementById("upgrade1-cost");
+        const upgrade2CostElement = document.getElementById("upgrade2-cost");
+        const upgrade3CostElement = document.getElementById("upgrade3-cost");
+
+        const upgradeMultipliers = {
+            upgrade1: 1.5, //Множитель цены улучшения 1
+            upgrade2: 2,   //Множитель цены улучшения 2
+            upgrade3: 2.5   //Множитель цены улучшения 3
+        };
+
+        clickAreaElement.addEventListener("click", () => {
+            score += clickValue;
+            scoreValueElement.textContent = score;
+            saveGame();
+        });
+
+        upgradeButtons.forEach(button => {
+            button.addEventListener("click", () => {
+                const upgrade = button.id;
+                const upgradeValue = parseInt(button.dataset.upgrade);
+                let upgradeCost = upgradeCosts[upgrade];
+
+                if (score >= upgradeCost) {
+                    score -= upgradeCost;
+                    clickValue += upgradeValue;
+                    scoreValueElement.textContent = score;
+
+                    //Увеличиваем цену
+                    upgradeCosts[upgrade] *= upgradeMultipliers[upgrade];
+                    upgradeCost = upgradeCosts[upgrade]; //Обновляем стоимость
+
+                    //Обновляем HTML
+                    document.getElementById(upgrade + '-cost').textContent = upgradeCost.toFixed(0);
+                    button.dataset.cost = upgradeCost.toFixed(0); // Обновляем data-cost
+
+                    saveGame();
+                    updateButtonState();
+
+                } else {
+                    alert("Недостаточно очков!");
+                }
+            });
+        });
+
+        function updateButtonState() {
+            upgradeButtons.forEach(button => {
+                const upgrade = button.id;
+                const upgradeCost = upgradeCosts[upgrade];
+                button.disabled = score < upgradeCost;
+            });
+        }
+
+        function saveGame() {
+            localStorage.setItem("score", score);
+            localStorage.setItem("clickValue", clickValue);
+            localStorage.setItem("upgradeCosts", JSON.stringify(upgradeCosts)); //Сохраняем объект как строку
+        }
+
+        function loadGame() {
+            score = parseInt(localStorage.getItem("score")) || 0;
+            clickValue = parseInt(localStorage.getItem("clickValue")) || 1;
+
+            const savedUpgradeCosts = localStorage.getItem("upgradeCosts");
+            if (savedUpgradeCosts) {
+                upgradeCosts = JSON.parse(savedUpgradeCosts); //Парсим строку в объект
+            }
+
+            scoreValueElement.textContent = score;
+            document.getElementById("upgrade1-cost").textContent = upgradeCosts.upgrade1.toFixed(0);
+            document.getElementById("upgrade2-cost").textContent = upgradeCosts.upgrade2.toFixed(0);
+            document.getElementById("upgrade3-cost").textContent = upgradeCosts.upgrade3.toFixed(0);
+
+            document.getElementById("upgrade1").dataset.cost = upgradeCosts.upgrade1.toFixed(0);
+            document.getElementById("upgrade2").dataset.cost = upgradeCosts.upgrade2.toFixed(0);
+            document.getElementById("upgrade3").dataset.cost = upgradeCosts.upgrade3.toFixed(0);
+
+        }
+
+        window.onload = function() {
+            loadGame();
+            updateButtonState();
+
+            setTimeout(() => {
+                preloader.style.display = "none";
+                gameContainer.style.opacity = 1;
+            }, 1000);
+        };
+    </script>
+</body>
+</html>
+
